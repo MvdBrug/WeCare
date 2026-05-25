@@ -31,8 +31,7 @@
 
   /* PAGE SYSTEM */
   .page { display: none; min-height: 100vh; flex-direction: column; }
-  .page.active { display: flex; animation: pageIn 0.22s ease-out; }
-  @keyframes pageIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  .page.active { display: flex; }
 
   /* ─── ENTRY PAGE ─── */
   #page-entry { 
@@ -129,7 +128,7 @@
   .company-logo { height: 44px; width: auto; object-fit: contain; }
 
   /* ─── MAIN PAGE ─── */
-  #page-main { background: linear-gradient(180deg, #fff 0%, var(--bg) 100%); }
+  #page-main { background: linear-gradient(180deg, #ffffff 0%, #e4e4e4 100%); }
   .main-content { 
     flex: 1; display: flex; flex-direction: column; align-items: center; 
     justify-content: center; padding: 16px 20px 24px; gap: 0;
@@ -1170,17 +1169,6 @@ html, body {
   display: flex;
 }
 
-/* Smooth slide-in animation */
-@keyframes slideInRight {
-  from { transform: translateX(30px); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
-}
-@keyframes slideInLeft {
-  from { transform: translateX(-30px); opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
-}
-.page.active            { animation: slideInRight 0.22s ease-out; }
-.page.active.back-anim  { animation: slideInLeft  0.22s ease-out; }
 
 /* Swipe hint cursor on page content areas */
 .al-svg-container, .pp-overview-wrap, .we-body,
