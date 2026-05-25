@@ -426,26 +426,19 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
     gap: 8px;
     padding: 0 12px 12px;
   }
   .pp-main-card {
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow-md);
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    align-items: stretch;
+    flex: none;
+    display: block;
   }
   .pp-main-card svg {
     width: 100%;
-    height: 100%;
+    height: auto;
     display: block;
-    border-radius: var(--radius);
     transition: filter 0.18s;
-    object-fit: contain;
   }
   .pp-main-card svg:hover { filter: brightness(1.06); }
 
@@ -456,23 +449,19 @@
     flex-direction: column;
     overflow: hidden;
     padding: 8px 12px 12px;
-    gap: 8px;
+    gap: 10px;
+    justify-content: center;
   }
   .pp-detail-card {
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow-sm);
-    background: #fff;
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    align-items: stretch;
+    flex: none;
+    width: 80%;
+    align-self: center;
+    display: block;
   }
   .pp-detail-card svg {
     width: 100%;
-    height: 100%;
+    height: auto;
     display: block;
-    object-fit: contain;
   }
 
   /* Footer logo (People Principles) */
