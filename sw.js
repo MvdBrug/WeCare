@@ -1,7 +1,7 @@
 // WeCare 2.0 — Service Worker
 // Caches all app assets for full offline use
 
-const CACHE_NAME = 'wecare-v5';
+const CACHE_NAME = 'wecare-v6';
 
 // All files to cache on install
 const PRECACHE_URLS = [
