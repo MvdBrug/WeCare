@@ -1613,33 +1613,73 @@ html, body {
   height: 62px;
 }
 
-/* ── 5. Accountability Ladder sub-pages: text lives inside the SVG
-        (foreignObject), so sizes below are SVG units and scale with the image ── */
-.al-fo-text .al-content-list {
+/* ── 5. Accountability Ladder sub-pages ──
+   The image sits in a frame with the SVG's aspect ratio (748.48 × 1118.66).
+   The frame fits within the available width AND height; the text overlay is
+   positioned in % of the frame and sized in cqw (frame width), so it scales
+   exactly with the image on every screen. No foreignObject (buggy in Safari). */
+.al-svg-container.al-sub-svg {
+  container-type: size;
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  position: relative;
+  overflow: hidden;
+  padding: 8px 12px 0;
+  box-sizing: border-box;
+}
+.al-sub-frame {
+  position: relative;
+  width: min(100cqw, 100cqh * 0.66909, 560px);
+  aspect-ratio: 748.48 / 1118.66;
+  margin: 0 auto;
+  container-type: inline-size;
+}
+.al-svg-container.al-sub-svg .al-sub-frame > svg {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+.al-sub-text {
+  position: absolute;
+  left: 28.7%;          /* x 215 of 748 */
+  top: 21.9%;           /* y 245 of 1118 */
+  width: 68.8%;         /* 515 of 748 */
+  pointer-events: none;
+}
+.al-sub-text .al-content-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 0.65em;
 }
-.al-fo-text .al-content-list li {
+.al-sub-text .al-content-list li {
   font-family: 'IBM Plex Sans', sans-serif;
-  font-size: 28px !important;
+  font-size: 3.74cqw !important;   /* = 28 SVG units */
   font-weight: 300;
   line-height: 1.5 !important;
   color: var(--grey);
   margin: 0;
-  padding-left: 30px;
+  padding-left: 1.07em;
   position: relative;
+  overflow-wrap: break-word;
 }
-.al-fo-text .al-content-list li::before {
+.al-sub-text .al-content-list li::before {
   content: '';
   position: absolute;
   left: 0;
   top: 0.48em;
-  width: 13px;
-  height: 13px;
+  width: 0.46em;
+  height: 0.46em;
   background: var(--al-color, #2DABE2);
-  border-radius: 2px;
+  border-radius: 0.07em;
+}
+/* Fallback for browsers without container queries (iOS < 16) */
+@supports not (width: 1cqw) {
+  .al-sub-frame { width: 100%; max-width: 560px; }
+  .al-sub-text .al-content-list li { font-size: clamp(11px, 3.6vw, 20px) !important; }
 }
