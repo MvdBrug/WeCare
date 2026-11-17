@@ -6,17 +6,6 @@ const NAV_PARENT = {"page-al": "page-main", "page-al-1": "page-al", "page-al-2":
 // ── History stack ──────────────────────────────────────────────────────────
 const history = [];
 
-// ── Cookie helpers ─────────────────────────────────────────────────────────
-function setCookie(name, val, days) {
-  const d = new Date();
-  d.setTime(d.getTime() + days * 864e5);
-  document.cookie = name + '=' + val + ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
-}
-function getCookie(name) {
-  const v = document.cookie.split(';').find(c => c.trim().startsWith(name + '='));
-  return v ? v.trim().split('=')[1] : null;
-}
-
 // ── Core navigation ────────────────────────────────────────────────────────
 function navigate(pageId, isBack = false) {
   const current = document.querySelector('.page.active');
@@ -54,21 +43,6 @@ function goBack() {
     if (!current) return;
     const parent = NAV_PARENT[current.id];
     if (parent) navigate(parent, true);
-  }
-}
-
-// ── Password check ─────────────────────────────────────────────────────────
-function checkPassword() {
-  const input = document.getElementById('pwd-input');
-  const error = document.getElementById('pwd-error');
-  if (input.value === 'WeCare') {
-    setCookie('wc_auth', '1', 365);
-    navigate('page-main');
-  } else {
-    error.textContent = 'Incorrect password. Please try again.';
-    input.classList.add('error');
-    input.value = '';
-    setTimeout(() => { input.classList.remove('error'); error.textContent = ''; }, 2000);
   }
 }
 
@@ -116,10 +90,3 @@ function switchTab(btn, panelId) {
     }
   }, { passive: true });
 })();
-
-// ── Init ───────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  if (getCookie('wc_auth') === '1') {
-    navigate('page-main');
-  }
-});

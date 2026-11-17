@@ -5,7 +5,7 @@
 |------|---------|
 | `index.html` | Main app — all 37 pages |
 | `app.css` | Styles — mobile-first, portrait-optimised |
-| `app.js` | Navigation, swipe-back, auth, tabs |
+| `app.js` | Navigation, swipe-back, tabs |
 | `sw.js` | Service worker — full offline support |
 | `manifest.json` | PWA manifest — Add to Home Screen |
 | `icon-192.png` | App icon 192×192 (Android) |
@@ -41,13 +41,14 @@ python3 -m http.server 8080
 > **Note:** Open via `http://localhost` not by double-clicking the file —
 > service workers require a server context.
 
-## Password
-Default: **WeCare**  
-To change: edit `app.js` → `checkPassword()` function.
+## Access
+There is no login — the app opens directly on the WeCare 2.0 wheel.
 
 ## Offline / PWA
-On first visit the service worker caches all files including Google Fonts.
+On first visit the service worker caches all files (fonts are bundled locally).
 After that the app works with **no internet connection** — ideal for use at sea.
+When online, pages, styles and scripts are always fetched fresh first, so
+users see updates on their next visit; the cache is only used as an offline fallback.
 
 ## Add to Home Screen
 - **iOS Safari:** tap Share → "Add to Home Screen" → the WeCare logo appears
@@ -59,5 +60,5 @@ The app then opens full-screen in portrait mode, indistinguishable from a native
 Swipe right from the left edge of the screen to go back — works alongside the back button.
 
 ## Updating the app
-Bump the version string in `sw.js` (`CACHE_NAME = 'wecare-v2'`) to force all
-users to receive the updated files on their next visit.
+Bump the version string in `sw.js` (`CACHE_NAME = 'wecare-v7'`) whenever files
+change. This refreshes the offline copy and deletes old caches on users' devices.

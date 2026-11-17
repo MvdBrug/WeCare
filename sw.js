@@ -1,9 +1,14 @@
 // WeCare 2.0 — Service Worker
-// Caches all app assets for full offline use
+// Works fully offline, while online users always get the latest content.
+//
+// Strategy:
+//   • HTML / JS / CSS / manifest → network-first (fresh when online, cached copy when offline)
+//   • Fonts / images             → cache-first (they rarely change)
+//
+// Bump CACHE_NAME whenever files change so old caches are cleaned up.
 
-const CACHE_NAME = 'wecare-v6';
+const CACHE_NAME = 'wecare-v7';
 
-// All files to cache on install
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -19,6 +24,7 @@ const PRECACHE_URLS = [
   './fonts/ibm-500.woff2',
   './fonts/ibm-600.woff2',
   './manifest.json',
+  './icon.svg',
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',
@@ -29,40 +35,61 @@ const PRECACHE_URLS = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(PRECACHE_URLS))
+      .then(cache => cache.addAll(PRECACHE_URLS.map(url => new Request(url, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });
 
-// Fonts are now served locally — no special handling needed
-
-  event.respondWith(
-    caches.match(event.request)
-      .then(cached => {
-        if (cached) return cached;
-
-        // Not in cache — fetch from network
-        return fetch(event.request)
-          .then(response => {
-            // Cache successful responses (not opaque/error)
-            if (!response || response.status !== 200 || response.type === 'error') {
-              return response;
-            }
-            // Don't cache chrome-extension or other non-http(s) requests
-            if (!event.request.url.startsWith('http')) return response;
-
-            const toCache = response.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, toCache);
-            });
-            return response;
-          })
-          .catch(() => {
-            // Offline and not cached — return offline page if it's a navigation
-            if (event.request.mode === 'navigate') {
-              return caches.match('./index.html');
-            }
-          });
-      })
+// ── Activate: remove old caches and take control immediately ──────────────
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+      ))
+      .then(() => self.clients.claim())
   );
+});
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function putInCache(request, response) {
+  if (response && response.status === 200 && response.type === 'basic') {
+    const copy = response.clone();
+    caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+  }
+  return response;
+}
+
+function networkFirst(request) {
+  return fetch(request)
+    .then(response => putInCache(request, response))
+    .catch(() =>
+      caches.match(request, { ignoreSearch: true }).then(cached => {
+        if (cached) return cached;
+        if (request.mode === 'navigate') return caches.match('./index.html');
+        return Response.error();
+      })
+    );
+}
+
+function cacheFirst(request) {
+  return caches.match(request).then(cached =>
+    cached || fetch(request).then(response => putInCache(request, response))
+  );
+}
+
+// ── Fetch ──────────────────────────────────────────────────────────────────
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return; // let the browser handle it
+
+  const isAppShell =
+    request.mode === 'navigate' ||
+    /\.(html|js|css|json)$/.test(url.pathname) ||
+    url.pathname.endsWith('/');
+
+  event.respondWith(isAppShell ? networkFirst(request) : cacheFirst(request));
 });
