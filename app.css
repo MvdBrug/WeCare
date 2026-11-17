@@ -1574,3 +1574,72 @@ html, body {
   display: block !important;
   flex-shrink: 0 !important;
 }
+
+
+/* ═══════════════════════════════════════════════════
+   UPDATE — Nov 2026
+═══════════════════════════════════════════════════ */
+
+/* ── 1. Section titles (AL / PP / WE): identical size & position ── */
+.concept-title-svg,
+#page-pp .concept-title-svg,
+.al-wrap > .concept-title-svg {
+  padding: 10px 5% 8px !important;
+  margin: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  background: #fff;
+}
+
+/* ── 2. PP detail: more space between title and Everyone/Leaders cards ── */
+.pp-detail-inner {
+  padding-top: 20px !important;
+}
+
+/* ── 3. Safety commitments: per-commitment colour ── */
+.osc-tile {
+  background: linear-gradient(135deg, var(--osc-color, #2DABE2) 0%, var(--osc-color-dark, #1a8fc4) 100%);
+}
+.osc-tile-watermark {
+  opacity: 0.2 !important;
+  object-fit: contain;
+}
+.osc-page .osc-detail-hero          { border-bottom-color: var(--osc-color); }
+.osc-page .osc-detail-num           { color: var(--osc-color); }
+.osc-page .osc-bullet-list li::before { background: var(--osc-color); }
+.osc-detail-icon svg {
+  width: 100%;
+  height: 62px;
+}
+
+/* ── 5. Accountability Ladder sub-pages: text lives inside the SVG
+        (foreignObject), so sizes below are SVG units and scale with the image ── */
+.al-fo-text .al-content-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.al-fo-text .al-content-list li {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 28px !important;
+  font-weight: 300;
+  line-height: 1.5 !important;
+  color: var(--grey);
+  margin: 0;
+  padding-left: 30px;
+  position: relative;
+}
+.al-fo-text .al-content-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.48em;
+  width: 13px;
+  height: 13px;
+  background: var(--al-color, #2DABE2);
+  border-radius: 2px;
+}
