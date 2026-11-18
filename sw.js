@@ -7,7 +7,7 @@
 //
 // Bump CACHE_NAME whenever files change so old caches are cleaned up.
 
-const CACHE_NAME = 'wecare-v9';
+const CACHE_NAME = 'wecare-v10';
 
 const PRECACHE_URLS = [
   './',

@@ -1683,3 +1683,21 @@ html, body {
   .al-sub-frame { width: 100%; max-width: 560px; }
   .al-sub-text .al-content-list li { font-size: clamp(11px, 3.6vw, 20px) !important; }
 }
+
+/* ── AL sub-pages: bold heading above the bullets (no bullet) ── */
+.al-sub-text .al-sub-heading {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 3.74cqw;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--grey);
+  margin: 0 0 0.65em;
+}
+@supports not (width: 1cqw) {
+  .al-sub-text .al-sub-heading { font-size: clamp(11px, 3.6vw, 20px); }
+}
+
+/* ── AL main: use the full available height (an older rule capped it at 90%) ── */
+.al-svg-container.al-main-container > svg {
+  max-height: 100% !important;
+}

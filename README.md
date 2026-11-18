@@ -60,5 +60,5 @@ The app then opens full-screen in portrait mode, indistinguishable from a native
 Swipe right from the left edge of the screen to go back — works alongside the back button.
 
 ## Updating the app
-Bump the version string in `sw.js` (`CACHE_NAME = 'wecare-v9'`) whenever files
+Bump the version string in `sw.js` (`CACHE_NAME = 'wecare-v10'`) whenever files
 change. This refreshes the offline copy and deletes old caches on users' devices.
