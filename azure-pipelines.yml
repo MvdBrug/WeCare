@@ -1,0 +1,288 @@
+# WeCare CI/CD pipeline
+# Validates and packages the static application.
+# DEV receives Entra authentication configuration.
+# PROD deploys only from the main branch.
+
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+
+  # ============================================================
+  # 1. VALIDATE AND PACKAGE
+  # ============================================================
+
+  - stage: ValidateAndPackage
+    displayName: Validate and package
+
+    jobs:
+      - job: Validate
+        displayName: Validate static website
+
+        steps:
+          - checkout: self
+            clean: true
+
+          - script: |
+              node --version
+              node --check app.js
+              node --check sw.js
+            displayName: Validate JavaScript syntax
+
+          - script: |
+              required_files=(
+                "index.html"
+                "app.css"
+                "app.js"
+                "sw.js"
+                "manifest.json"
+                "icon-192.png"
+                "icon-512.png"
+              )
+
+              for file in "${required_files[@]}"; do
+                if [ ! -f "$file" ]; then
+                  echo "Required file is missing: $file"
+                  exit 1
+                fi
+              done
+
+              echo "All required application files are present."
+            displayName: Verify required files
+
+          - task: CopyFiles@2
+            displayName: Prepare website artifact
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)'
+              Contents: |
+                **/*
+                !.git/**/*
+                !.github/**/*
+                !azure-pipelines.yml
+                !README.md
+              TargetFolder: '$(Build.ArtifactStagingDirectory)/wecare'
+              CleanTargetFolder: true
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish website artifact
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)/wecare'
+              artifact: 'wecare-site'
+              publishLocation: 'pipeline'
+
+
+  # ============================================================
+  # 2. VALIDATE DEV DEPLOYMENT TOKEN
+  # ============================================================
+
+  - stage: ValidateDevSecrets
+    displayName: Validate DEV secrets
+    dependsOn: ValidateAndPackage
+    condition: succeeded()
+
+    jobs:
+      - job: ReadKeyVault
+        displayName: Verify Key Vault access
+
+        steps:
+          - task: AzureKeyVault@2
+            displayName: Retrieve DEV deployment token
+            inputs:
+              azureSubscription: 'WeCare-ARM'
+              KeyVaultName: 'wecaredevkey'
+              SecretsFilter: 'WeCare-SWA-DEV-DeploymentToken'
+              RunAsPreJob: false
+
+          - powershell: |
+              if ([string]::IsNullOrWhiteSpace("$(WeCare-SWA-DEV-DeploymentToken)")) {
+                Write-Error "DEV deployment token was not retrieved from Key Vault."
+                exit 1
+              }
+
+              Write-Host "DEV deployment token retrieved successfully."
+            displayName: Verify deployment token
+
+
+  # ============================================================
+  # 3. DEPLOY DEV
+  # ============================================================
+
+  - stage: DeployDev
+    displayName: Deploy to DEV
+    dependsOn: ValidateDevSecrets
+    condition: succeeded()
+
+    jobs:
+      - job: DeployStaticWebApp
+        displayName: Deploy WeCare to DEV
+
+        steps:
+          - task: DownloadPipelineArtifact@2
+            displayName: Download website artifact
+            inputs:
+              buildType: 'current'
+              artifactName: 'wecare-site'
+              targetPath: '$(System.DefaultWorkingDirectory)/wecare-site'
+
+          - task: AzureKeyVault@2
+            displayName: Retrieve DEV deployment token
+            inputs:
+              azureSubscription: 'WeCare-ARM'
+              KeyVaultName: 'wecaredevkey'
+              SecretsFilter: 'WeCare-SWA-DEV-DeploymentToken'
+              RunAsPreJob: false
+
+          # DEV ONLY:
+          # Generate Static Web Apps authentication configuration.
+          # This file exists only inside this DEV job.
+          # It is NOT added to the published artifact used by PROD.
+          - bash: |
+              cat > "$(System.DefaultWorkingDirectory)/wecare-site/staticwebapp.config.json" <<'EOF'
+              {
+                "routes": [
+                  {
+                    "route": "/*",
+                    "allowedRoles": [
+                      "authenticated"
+                    ]
+                  }
+                ],
+                "responseOverrides": {
+                  "401": {
+                    "statusCode": 302,
+                    "redirect": "/.auth/login/aad"
+                  }
+                },
+                "auth": {
+                  "identityProviders": {
+                    "azureActiveDirectory": {
+                      "registration": {
+                        "openIdIssuer": "https://login.microsoftonline.com/1ed3f078-7b42-4ba8-8bcd-a52b653e0fe8/v2.0",
+                        "clientIdSettingName": "AZURE_CLIENT_ID",
+                        "clientSecretSettingName": "AZURE_CLIENT_SECRET"
+                      }
+                    }
+                  }
+                }
+              }
+              EOF
+
+              python3 -m json.tool \
+                "$(System.DefaultWorkingDirectory)/wecare-site/staticwebapp.config.json" \
+                > /dev/null
+
+              echo "DEV authentication configuration created and validated."
+            displayName: Add DEV authentication configuration
+
+          - bash: |
+              echo "Checking DEV authentication configuration..."
+
+              if [ ! -f "$(System.DefaultWorkingDirectory)/wecare-site/staticwebapp.config.json" ]; then
+                echo "ERROR: staticwebapp.config.json was not created."
+                exit 1
+              fi
+
+              echo "staticwebapp.config.json exists:"
+              cat "$(System.DefaultWorkingDirectory)/wecare-site/staticwebapp.config.json"
+            displayName: Verify DEV authentication configuration
+
+          - task: AzureStaticWebApp@0
+            displayName: Deploy to WeCareDev
+            inputs:
+              cwd: '$(System.DefaultWorkingDirectory)'
+              app_location: 'wecare-site'
+              config_file_location: 'wecare-site'
+              output_location: ''
+              skip_app_build: true
+              skip_api_build: true
+              verbose: true
+              azure_static_web_apps_api_token: '$(WeCare-SWA-DEV-DeploymentToken)'
+
+
+  # ============================================================
+  # 4. VALIDATE PROD DEPLOYMENT TOKEN
+  #    MAIN BRANCH ONLY
+  # ============================================================
+
+  - stage: ValidateProdSecrets
+    displayName: Validate PROD secrets
+    dependsOn: DeployDev
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+    jobs:
+      - job: ReadProdKeyVault
+        displayName: Verify PROD Key Vault access
+
+        steps:
+          - task: AzureKeyVault@2
+            displayName: Retrieve PROD deployment token
+            inputs:
+              azureSubscription: 'WeCare-ARM'
+              KeyVaultName: 'wecaredevkey'
+              SecretsFilter: 'WeCare-SWA-PRD-DeploymentToken'
+              RunAsPreJob: false
+
+          - powershell: |
+              if ([string]::IsNullOrWhiteSpace("$(WeCare-SWA-PRD-DeploymentToken)")) {
+                Write-Error "PROD deployment token was not retrieved from Key Vault."
+                exit 1
+              }
+
+              Write-Host "PROD deployment token retrieved successfully."
+            displayName: Verify PROD deployment token
+
+
+  # ============================================================
+  # 5. DEPLOY PROD
+  #    MAIN BRANCH ONLY
+  # ============================================================
+
+  - stage: DeployProd
+    displayName: Deploy to PROD
+    dependsOn: ValidateProdSecrets
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+    jobs:
+      - deployment: DeployStaticWebAppProd
+        displayName: Deploy WeCare to PROD
+        environment: 'WeCare-PROD'
+
+        strategy:
+          runOnce:
+            deploy:
+
+              steps:
+                - task: DownloadPipelineArtifact@2
+                  displayName: Download website artifact
+                  inputs:
+                    buildType: 'current'
+                    artifactName: 'wecare-site'
+                    targetPath: '$(System.DefaultWorkingDirectory)/wecare-site'
+
+                - task: AzureKeyVault@2
+                  displayName: Retrieve PROD deployment token
+                  inputs:
+                    azureSubscription: 'WeCare-ARM'
+                    KeyVaultName: 'wecaredevkey'
+                    SecretsFilter: 'WeCare-SWA-PRD-DeploymentToken'
+                    RunAsPreJob: false
+
+                - task: AzureStaticWebApp@0
+                  displayName: Deploy to WeCarePRD
+                  inputs:
+                    cwd: '$(System.DefaultWorkingDirectory)'
+                    app_location: 'wecare-site'
+                    output_location: ''
+                    skip_app_build: true
+                    skip_api_build: true
+                    azure_static_web_apps_api_token: '$(WeCare-SWA-PRD-DeploymentToken)'

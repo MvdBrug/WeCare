@@ -1701,3 +1701,11 @@ html, body {
 .al-svg-container.al-main-container > svg {
   max-height: 100% !important;
 }
+
+/* ── AL main: 2% shorter (small gap below) and shifted 10% right ── */
+.al-svg-container.al-main-container > svg {
+  height: 98% !important;
+  max-height: 98% !important;
+  margin-left: 10% !important;
+  max-width: 90% !important;
+}
